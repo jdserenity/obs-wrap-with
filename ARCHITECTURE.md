@@ -20,3 +20,4 @@ Single Obsidian plugin **Wrap With** wraps the editor selection in HTML `<b>`, `
 
 - `npm run build` — `tsc --noEmit` then esbuild production bundle.
 - `npm test` — Vitest on `src/wrapLogic.test.ts` (strip/wrap/cursor offset helpers).
+- `npm run push_to_prod` — builds, then copies `main.js` and `manifest.json` into `wrap-with` under each vault’s `.obsidian/plugins`: desktop `obsidian vault (root)`; mobile iCloud `obsidian vault (ios)`.

@@ -2,12 +2,16 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEST="/Users/jd/Documents/obsidian-temp/obsidian vault (root)/.obsidian/plugins/wrap-with"
+DESTS=(
+  "/Users/jd/Documents/obsidian-temp/obsidian vault (root)/.obsidian/plugins/wrap-with"
+  "/Users/jd/Library/Mobile Documents/iCloud~md~obsidian/Documents/obsidian vault (ios)/.obsidian/plugins/wrap-with"
+)
 
 cd "$ROOT"
 npm run build
 
-mkdir -p "$DEST"
-cp "$ROOT/main.js" "$ROOT/manifest.json" "$DEST/"
-
-echo "Copied main.js and manifest.json -> $DEST"
+for DEST in "${DESTS[@]}"; do
+  mkdir -p "$DEST"
+  cp "$ROOT/main.js" "$ROOT/manifest.json" "$DEST/"
+  echo "Copied main.js and manifest.json -> $DEST"
+done
