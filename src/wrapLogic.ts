@@ -13,7 +13,8 @@ export function cursorRetreatForTag(tag: string): number {
 }
 
 export const WRAP_MODES = [
-  { id: "wrap-with-b", name: "Wrap selection with <b> tags", tag: "b", outerMarkdown: /^\*\*(.+)\*\*$/ },
-  { id: "wrap-with-em", name: "Wrap selection with <em> tags", tag: "em", outerMarkdown: /^\*(.+)\*$/ },
-  { id: "wrap-with-s", name: "Wrap selection with <s> tags", tag: "s", outerMarkdown: /^~~(.+)~~$/ },
+  { id: "wrap-with-b", name: "Wrap selection with <b> tags", tag: "b", icon: "bold", outerMarkdown: /^\*\*(.+)\*\*$/ },
+  { id: "wrap-with-em", name: "Wrap selection with <em> tags", tag: "em", icon: "italic", outerMarkdown: /^\*(.+)\*$/ },
+  { id: "wrap-with-s", name: "Wrap selection with <s> tags", tag: "s", icon: "strikethrough", outerMarkdown: /^~~(.+)~~$/ },
+  { id: "wrap-with-u", name: "Wrap selection with <u> tags", tag: "u", icon: "underline", outerMarkdown: /^<u>(.+)<\/u>$/ },
 ] as const;

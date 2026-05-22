@@ -15,6 +15,7 @@ const HOTKEYS: Record<(typeof WRAP_MODES)[number]["tag"], { modifiers: ("Mod" | 
   b: { modifiers: ["Mod", "Shift"], key: "b" },
   em: { modifiers: ["Mod", "Shift"], key: "e" },
   s: { modifiers: ["Mod", "Shift"], key: "s" },
+  u: { modifiers: ["Mod", "Shift"], key: "u" },
 };
 
 export default class WrapWithPlugin extends Plugin {
@@ -23,6 +24,7 @@ export default class WrapWithPlugin extends Plugin {
       this.addCommand({
         id: mode.id,
         name: mode.name,
+        icon: mode.icon,
         hotkeys: [HOTKEYS[mode.tag]],
         editorCallback: (editor) => applyWrap(editor, mode.tag, mode.outerMarkdown),
       });

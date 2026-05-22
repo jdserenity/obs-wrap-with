@@ -25,6 +25,12 @@ describe("innerFromSelection", () => {
   it("does not match when the string does not start and end with strikethrough markers", () => {
     expect(innerFromSelection("x ~~a~~", WRAP_MODES[2].outerMarkdown)).toBe("x ~~a~~");
   });
+  it("strips existing u tags when the whole selection matches", () => {
+    expect(innerFromSelection("<u>x</u>", WRAP_MODES[3].outerMarkdown)).toBe("x");
+  });
+  it("does not match when the string does not start and end with u tags", () => {
+    expect(innerFromSelection("x <u>a</u>", WRAP_MODES[3].outerMarkdown)).toBe("x <u>a</u>");
+  });
 });
 
 describe("wrapWithTag", () => {
@@ -37,6 +43,9 @@ describe("wrapWithTag", () => {
   it("wraps with s", () => {
     expect(wrapWithTag("hi", "s")).toBe("<s>hi</s>");
   });
+  it("wraps with u", () => {
+    expect(wrapWithTag("hi", "u")).toBe("<u>hi</u>");
+  });
 });
 
 describe("cursorRetreatForTag", () => {
@@ -46,5 +55,8 @@ describe("cursorRetreatForTag", () => {
   });
   it("matches original em closing tag length (5)", () => {
     expect(cursorRetreatForTag("em")).toBe(5);
+  });
+  it("matches u closing tag length (4)", () => {
+    expect(cursorRetreatForTag("u")).toBe(4);
   });
 });

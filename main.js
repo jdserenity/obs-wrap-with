@@ -39,9 +39,10 @@ function cursorRetreatForTag(tag) {
   return `</${tag}>`.length;
 }
 var WRAP_MODES = [
-  { id: "wrap-with-b", name: "Wrap selection with <b> tags", tag: "b", outerMarkdown: /^\*\*(.+)\*\*$/ },
-  { id: "wrap-with-em", name: "Wrap selection with <em> tags", tag: "em", outerMarkdown: /^\*(.+)\*$/ },
-  { id: "wrap-with-s", name: "Wrap selection with <s> tags", tag: "s", outerMarkdown: /^~~(.+)~~$/ }
+  { id: "wrap-with-b", name: "Wrap selection with <b> tags", tag: "b", icon: "bold", outerMarkdown: /^\*\*(.+)\*\*$/ },
+  { id: "wrap-with-em", name: "Wrap selection with <em> tags", tag: "em", icon: "italic", outerMarkdown: /^\*(.+)\*$/ },
+  { id: "wrap-with-s", name: "Wrap selection with <s> tags", tag: "s", icon: "strikethrough", outerMarkdown: /^~~(.+)~~$/ },
+  { id: "wrap-with-u", name: "Wrap selection with <u> tags", tag: "u", icon: "underline", outerMarkdown: /^<u>(.+)<\/u>$/ }
 ];
 
 // src/main.ts
@@ -57,7 +58,8 @@ function applyWrap(editor, tag, outerMarkdown) {
 var HOTKEYS = {
   b: { modifiers: ["Mod", "Shift"], key: "b" },
   em: { modifiers: ["Mod", "Shift"], key: "e" },
-  s: { modifiers: ["Mod", "Shift"], key: "s" }
+  s: { modifiers: ["Mod", "Shift"], key: "s" },
+  u: { modifiers: ["Mod", "Shift"], key: "u" }
 };
 var WrapWithPlugin = class extends import_obsidian.Plugin {
   async onload() {
@@ -65,6 +67,7 @@ var WrapWithPlugin = class extends import_obsidian.Plugin {
       this.addCommand({
         id: mode.id,
         name: mode.name,
+        icon: mode.icon,
         hotkeys: [HOTKEYS[mode.tag]],
         editorCallback: (editor) => applyWrap(editor, mode.tag, mode.outerMarkdown)
       });

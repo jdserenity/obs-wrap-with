@@ -1,7 +1,7 @@
 {
   "name": "wrap-with",
   "version": "1.0.0",
-  "description": "Obsidian plugin: wrap editor selection with HTML b, em, or s tags.",
+  "description": "Obsidian plugin: wrap editor selection with HTML b, em, s, or u tags.",
   "main": "main.js",
   "scripts": {
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",

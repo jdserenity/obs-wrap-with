@@ -3,7 +3,7 @@
   "name": "Wrap With",
   "version": "1.0.0",
   "minAppVersion": "0.15.0",
-  "description": "Wraps the selected text with <b>, <em>, or <s> HTML tags.",
+  "description": "Wraps the selected text with <b>, <em>, <s>, or <u> HTML tags.",
   "author": "jd",
   "isDesktopOnly": false
 }
