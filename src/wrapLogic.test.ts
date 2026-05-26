@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  EM_ALT_HOTKEY,
+  WRAP_HOTKEYS,
   WRAP_MODES,
   cursorRetreatForTag,
+  emCommandHotkeys,
   innerFromSelection,
   wrapWithTag,
 } from "./wrapLogic";
@@ -45,6 +48,19 @@ describe("wrapWithTag", () => {
   });
   it("wraps with u", () => {
     expect(wrapWithTag("hi", "u")).toBe("<u>hi</u>");
+  });
+});
+
+describe("emCommandHotkeys", () => {
+  it("includes Mod+Shift+E always", () => {
+    expect(emCommandHotkeys(false)[0]).toEqual(WRAP_HOTKEYS.em);
+    expect(emCommandHotkeys(true)[0]).toEqual(WRAP_HOTKEYS.em);
+  });
+  it("adds Mod+Shift+I when alsoModShiftI is true", () => {
+    expect(emCommandHotkeys(true)).toEqual([WRAP_HOTKEYS.em, EM_ALT_HOTKEY]);
+  });
+  it("omits Mod+Shift+I when alsoModShiftI is false", () => {
+    expect(emCommandHotkeys(false)).toEqual([WRAP_HOTKEYS.em]);
   });
 });
 

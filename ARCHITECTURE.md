@@ -7,13 +7,13 @@ Single Obsidian plugin **Wrap With** wraps the editor selection in HTML `<b>`, `
 ## Layout
 
 - `src/wrapLogic.ts` — pure helpers + `WRAP_MODES` table (tag, command id/name, Lucide icon id, strip regex).
-- `src/main.ts` — `Plugin` wiring: one `addCommand` per mode (with `icon` for mobile toolbar), shared `applyWrap` editor callback.
+- `src/main.ts` — `Plugin` wiring: one `addCommand` per mode (with `icon` for mobile toolbar), shared `applyWrap` editor callback; settings tab (`emAlsoModShiftI`, default true) re-registers commands when toggled.
 - `esbuild.config.mjs` — bundle `src/main.ts` to root `main.js` with `obsidian` externalized.
 
 ## Defaults
 
 - Command IDs: `wrap-with-b`, `wrap-with-em`, `wrap-with-s`, `wrap-with-u` (stable for hotkey/settings migration from the old plugins).
-- Default hotkeys: Mod+Shift+B / E / S / U.
+- Default hotkeys: Mod+Shift+B / E / S / U; optional second hotkey Mod+Shift+I for `<em>` (same command as E, on by default; toggle in plugin settings).
 - Mobile: each command sets `icon` (`bold`, `italic`, `strikethrough`, `underline`) so they appear in Obsidian mobile toolbar customization (Settings → Mobile → Manage toolbar options).
 
 ## Build / test
