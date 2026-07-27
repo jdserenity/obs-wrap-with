@@ -12,6 +12,6 @@ npm run build
 
 for DEST in "${DESTS[@]}"; do
   mkdir -p "$DEST"
-  cp "$ROOT/main.js" "$ROOT/manifest.json" "$DEST/"
-  echo "Copied main.js and manifest.json -> $DEST"
+  cp "$ROOT/dist/main.js" "$ROOT/manifest.json" "$DEST/"
+  echo "Copied dist/main.js and manifest.json -> $DEST"
 done
