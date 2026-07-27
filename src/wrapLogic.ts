@@ -34,3 +34,82 @@ export const EM_ALT_HOTKEY: WrapHotkey = { modifiers: ["Mod", "Shift"], key: "i"
 export function emCommandHotkeys(alsoModShiftI: boolean): WrapHotkey[] {
   return alsoModShiftI ? [WRAP_HOTKEYS.em, EM_ALT_HOTKEY] : [WRAP_HOTKEYS.em];
 }
+
+export const DEFAULT_COLORS = ["#c00000", "#ff6600", "#ffc000", "#00b050", "#00b0f0", "#0070c0", "#7030a0"];
+
+export const COLOR_COMMAND = {
+  id: "wrap-with-color",
+  name: "Wrap selection with next color",
+  icon: "palette",
+} as const;
+
+export const REMOVE_COLOR_COMMAND = {
+  id: "wrap-with-remove-color",
+  name: "Remove color from selection",
+  icon: "eraser",
+} as const;
+
+export const COLOR_HOTKEY: WrapHotkey = { modifiers: ["Mod", "Shift"], key: "c" };
+export const REMOVE_COLOR_HOTKEY: WrapHotkey = { modifiers: ["Mod", "Shift"], key: "x" };
+
+const COLOR_SPAN_OUTER = /^<span style="color:\s*[^"]+">(.*)<\/span>$/s;
+const COLOR_SPAN_ANY = /<span style="color:\s*[^"]+">(.*?)<\/span>/gs;
+
+const OUTER_BY_TAG: Record<string, RegExp[]> = {
+  b: [/^\*\*(.+)\*\*$/, /^<b>(.+)<\/b>$/s],
+  em: [/^\*(.+)\*$/, /^<em>(.+)<\/em>$/s],
+  s: [/^~~(.+)~~$/, /^<s>(.+)<\/s>$/s],
+  u: [/^<u>(.+)<\/u>$/s],
+  color: [COLOR_SPAN_OUTER],
+};
+
+/** Convert known markdown forms anywhere inside the text to HTML tags. Order: *** then ** then * then ~~. */
+export function convertInnerMarkdown(text: string): string {
+  return text
+    .replace(/\*\*\*(.+?)\*\*\*/g, "<b><em>$1</em></b>")
+    .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/~~(.+?)~~/g, "<s>$1</s>");
+}
+
+/** Strip one outer layer matching the mode (markdown and/or HTML), if the whole selection matches. */
+export function stripOuterForMode(selection: string, tag: string): string {
+  const patterns = OUTER_BY_TAG[tag];
+  if (!patterns) return selection;
+  for (const re of patterns) {
+    const m = selection.match(re);
+    if (m) return m[1];
+  }
+  return selection;
+}
+
+/** Strip outer matching mode, then convert remaining markdown wraps to HTML. */
+export function prepareSelection(selection: string, tag: string): string {
+  return convertInnerMarkdown(stripOuterForMode(selection, tag));
+}
+
+export function wrapWithColor(inner: string, hex: string): string {
+  return `<span style="color: ${hex}">${inner}</span>`;
+}
+
+export function cursorRetreatForColor(): number {
+  return "</span>".length;
+}
+
+export function nextColor(colors: string[], index: number): { color: string; nextIndex: number } {
+  const n = colors.length;
+  const i = ((index % n) + n) % n;
+  return { color: colors[i], nextIndex: (i + 1) % n };
+}
+
+/** Unwrap every color span in the text; repeats until stable for nested spans. */
+export function removeColorSpans(text: string): string {
+  let prev = "";
+  let cur = text;
+  while (cur !== prev) {
+    prev = cur;
+    COLOR_SPAN_ANY.lastIndex = 0;
+    cur = cur.replace(COLOR_SPAN_ANY, "$1");
+  }
+  return cur;
+}

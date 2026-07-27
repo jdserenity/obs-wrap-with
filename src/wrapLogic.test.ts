@@ -3,9 +3,15 @@ import {
   EM_ALT_HOTKEY,
   WRAP_HOTKEYS,
   WRAP_MODES,
+  convertInnerMarkdown,
+  cursorRetreatForColor,
   cursorRetreatForTag,
   emCommandHotkeys,
   innerFromSelection,
+  nextColor,
+  prepareSelection,
+  removeColorSpans,
+  wrapWithColor,
   wrapWithTag,
 } from "./wrapLogic";
 
@@ -74,5 +80,69 @@ describe("cursorRetreatForTag", () => {
   });
   it("matches u closing tag length (4)", () => {
     expect(cursorRetreatForTag("u")).toBe(4);
+  });
+});
+
+describe("convertInnerMarkdown", () => {
+  it("converts bold italic then bold then italic then strike", () => {
+    expect(convertInnerMarkdown("***x***")).toBe("<b><em>x</em></b>");
+    expect(convertInnerMarkdown("**x**")).toBe("<b>x</b>");
+    expect(convertInnerMarkdown("*x*")).toBe("<em>x</em>");
+    expect(convertInnerMarkdown("~~x~~")).toBe("<s>x</s>");
+  });
+  it("converts nested forms inside a longer string", () => {
+    expect(convertInnerMarkdown("hello **world**")).toBe("hello <b>world</b>");
+  });
+  it("leaves existing HTML alone", () => {
+    expect(convertInnerMarkdown("<b>x</b>")).toBe("<b>x</b>");
+  });
+});
+
+describe("prepareSelection", () => {
+  it("strips outer bold markdown then wraps clean for b", () => {
+    expect(prepareSelection("**hello**", "b")).toBe("hello");
+  });
+  it("strips outer HTML b when preparing for b", () => {
+    expect(prepareSelection("<b>hello</b>", "b")).toBe("hello");
+  });
+  it("converts inner bold when preparing for u", () => {
+    expect(prepareSelection("**hello**", "u")).toBe("<b>hello</b>");
+  });
+  it("converts partial bold when preparing for u", () => {
+    expect(prepareSelection("hello **world**", "u")).toBe("hello <b>world</b>");
+  });
+  it("strips outer color span when preparing for color", () => {
+    expect(prepareSelection('<span style="color: #c00000">hi</span>', "color")).toBe("hi");
+  });
+  it("converts inner markdown when preparing for color", () => {
+    expect(prepareSelection("**hello**", "color")).toBe("<b>hello</b>");
+  });
+});
+
+describe("wrapWithColor / cursorRetreatForColor / nextColor", () => {
+  it("wraps with a color span", () => {
+    expect(wrapWithColor("hi", "#c00000")).toBe('<span style="color: #c00000">hi</span>');
+  });
+  it("retreats by </span> length (7)", () => {
+    expect(cursorRetreatForColor()).toBe(7);
+  });
+  it("returns current color and advances index with wraparound", () => {
+    expect(nextColor(["#a", "#b"], 0)).toEqual({ color: "#a", nextIndex: 1 });
+    expect(nextColor(["#a", "#b"], 1)).toEqual({ color: "#b", nextIndex: 0 });
+  });
+});
+
+describe("removeColorSpans", () => {
+  it("strips a single color span", () => {
+    expect(removeColorSpans('<span style="color: #c00000">hi</span>')).toBe("hi");
+  });
+  it("keeps nested HTML inside the span", () => {
+    expect(removeColorSpans('a <span style="color: #c00000"><b>b</b></span> c')).toBe("a <b>b</b> c");
+  });
+  it("strips multiple spans", () => {
+    expect(removeColorSpans('<span style="color: #a">x</span> <span style="color: #b">y</span>')).toBe("x y");
+  });
+  it("is a no-op when there are no color spans", () => {
+    expect(removeColorSpans("<b>hi</b>")).toBe("<b>hi</b>");
   });
 });
