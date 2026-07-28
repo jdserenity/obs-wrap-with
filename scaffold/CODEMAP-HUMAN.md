@@ -1,29 +1,83 @@
-# Architecture (human-readable)
+# Codebase map (human)
 
-I keep this plugin small on purpose: one Obsidian plugin that wraps whatever I have selected in the editor.
+Maintainer-facing map of this repo: which files do what, how control/data move, and where state lives. Prefer diagrams over prose. Product rules and command details live in `scaffold/CODEMAP-LLM.md`. Install/run commands live in root `README.md`.
+
+## What belongs here
+
+- File / folder roles (what to open for which job)
+- Control flow and data flow (diagrams preferred)
+- Where state lives (in memory vs on disk, which fields)
+- How build / deploy pieces connect (inputs → outputs → vaults)
+
+Do **not** put here: hotkey tables, default palette hexes, detailed wrap/convert rules, install commands, or agent-only dense reference — those belong in CODEMAP-LLM or README.
+
+## Files
+
+| Path | Role |
+|---|---|
+| `src/wrapLogic.ts` | Pure text/color helpers (no Obsidian). Tests target this. |
+| `src/main.ts` | Obsidian plugin: load/save settings, register commands + settings UI, call into `wrapLogic`. |
+| `src/wrapLogic.test.ts` | Unit tests for wrap/color helpers. |
+| `src/pushToProd.test.ts` | Checks the deploy script’s destinations / copy behavior. |
+| `esbuild.config.mjs` | Bundles `src/main.ts` → `dist/main.js` (`obsidian` left external). |
+| `manifest.json` | Plugin id/version metadata Obsidian needs alongside the bundle. |
+| `dist/main.js` | Built artifact Obsidian loads (not edited by hand). |
+| `push_to_prod` | Build, then copy `dist/main.js` + `manifest.json` into desktop and iOS vault plugin folders. |
+| `scaffold/` | Agent rules, this map, LLM architecture reference, skills. |
+
+## Control flow — wrap a selection
+
+```mermaid
+flowchart TD
+  user[User runs a wrap command] --> main[main.ts command callback]
+  main --> prep[wrapLogic.prepareSelection]
+  prep --> strip[Strip one matching outer layer if whole selection matches]
+  strip --> md[Convert inner markdown wraps to HTML]
+  md --> wrap{Mode?}
+  wrap -->|b em s u| tag[wrapWithTag]
+  wrap -->|color| pick[pickColor then wrapWithColor]
+  wrap -->|remove color| rem[removeColorSpans]
+  tag --> ed[editor.replaceSelection]
+  pick --> ed
+  rem --> ed
+  pick --> save[Update colorPool + lastColor then saveData]
+```
+
+Tag wraps (`b` / `em` / `s` / `u`) go through shared `applyWrap` in `main.ts`. Color and remove-color have their own callbacks in `registerWrapCommands`.
+
+## Data flow — color pool
 
 ```mermaid
 flowchart LR
-  select[I select text] --> cmd[I run a wrap command]
-  cmd --> prep[Strip matching outer layer then convert leftover markdown]
-  prep --> out[Replace selection with HTML tags or a color span]
+  settings[settings.colors full list] --> pick[pickColor]
+  pool[settings.colorPool remaining] --> pick
+  last[settings.lastColor] --> pick
+  pick --> out[chosen color + new remaining + new lastColor]
+  out --> mem[this.settings in memory]
+  mem --> disk[saveData → vault plugin data.json]
+  disk --> load[loadData on plugin load]
+  load --> mem
 ```
 
-## Where the code lives
+`ColorPickState` in `wrapLogic.ts` is only the argument shape for `pickColor` (`remaining` + `lastColor`). It is not a separate store. `main.ts` maps `colorPool` ↔ `remaining` when calling `pickColor`.
 
-- **`src/wrapLogic.ts`** — The pure text rules (no Obsidian UI). This is what the tests hit.
-- **`src/main.ts`** — Registers commands, hotkeys, the mobile toolbar icons, and the settings screen for the color list.
-- **`dist/main.js`** — The built file Obsidian actually loads. `push_to_prod` copies that plus `manifest.json` into my desktop vault and my iPhone vault.
+## Where state lives
 
-## What wrapping does now
+| What | Where |
+|---|---|
+| Full color list, leftover pool, last color used, italic-hotkey toggle | `WrapWithPlugin.settings` in memory while the plugin is loaded |
+| Same fields persisted | Obsidian `saveData` / `loadData` — per vault under that vault’s `.obsidian/plugins/wrap-with/` (typically `data.json`) |
+| Desktop vs iPhone | Separate vault plugin folders; no automatic sync between them |
+| Editor selection / note text | Obsidian editor only — plugin does not keep a copy |
 
-Each wrap command does two things before it adds its own tags:
+## Build and deploy
 
-1. If the whole selection is already that same kind of wrap (for example `**hello**` when I bold, or an existing color span when I color again), it peels that outer layer off once.
-2. Then it walks the leftover text and turns markdown like `**…**`, `*…*`, and `~~…~~` into the matching HTML tags.
-
-So wrapping `**hello**` with underline becomes `<u><b>hello</b></u>`, not `<u>**hello**</u>`.
-
-## Colors
-
-I pick a list of colors in settings (default is seven). There is no status bar. Each time I run the color command, it uses the next color in that list and remembers where it left off in that vault’s plugin data. Desktop and phone do not share that list or index unless I copy settings myself. A separate remove-color command strips color spans out of the selection and leaves other markup alone.
+```mermaid
+flowchart LR
+  src[src/main.ts + wrapLogic.ts] --> esbuild[esbuild.config.mjs]
+  esbuild --> dist[dist/main.js]
+  dist --> push[push_to_prod]
+  man[manifest.json] --> push
+  push --> desk[Desktop vault .../plugins/wrap-with]
+  push --> ios[iOS vault .../plugins/wrap-with]
+```
