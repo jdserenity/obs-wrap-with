@@ -8,7 +8,7 @@ import {
   cursorRetreatForTag,
   emCommandHotkeys,
   innerFromSelection,
-  nextColor,
+  pickColor,
   prepareSelection,
   removeColorSpans,
   wrapWithColor,
@@ -119,16 +119,50 @@ describe("prepareSelection", () => {
   });
 });
 
-describe("wrapWithColor / cursorRetreatForColor / nextColor", () => {
+describe("wrapWithColor / cursorRetreatForColor / pickColor", () => {
   it("wraps with a color span", () => {
     expect(wrapWithColor("hi", "#c00000")).toBe('<span style="color: #c00000">hi</span>');
   });
   it("retreats by </span> length (7)", () => {
     expect(cursorRetreatForColor()).toBe(7);
   });
-  it("returns current color and advances index with wraparound", () => {
-    expect(nextColor(["#a", "#b"], 0)).toEqual({ color: "#a", nextIndex: 1 });
-    expect(nextColor(["#a", "#b"], 1)).toEqual({ color: "#b", nextIndex: 0 });
+  it("picks from a full list when the pool is empty and removes that color", () => {
+    // random 0 → first candidate
+    expect(pickColor(["#a", "#b", "#c"], { remaining: [], lastColor: null }, () => 0)).toEqual({
+      color: "#a",
+      remaining: ["#b", "#c"],
+      lastColor: "#a",
+    });
+  });
+  it("picks from the remaining pool when it is not empty", () => {
+    expect(pickColor(["#a", "#b", "#c"], { remaining: ["#b", "#c"], lastColor: "#a" }, () => 0)).toEqual({
+      color: "#b",
+      remaining: ["#c"],
+      lastColor: "#b",
+    });
+  });
+  it("refills the pool when empty and excludes the previous last color from the first pick", () => {
+    // candidates after excluding #c are [#a, #b]; random 0 → #a
+    expect(pickColor(["#a", "#b", "#c"], { remaining: [], lastColor: "#c" }, () => 0)).toEqual({
+      color: "#a",
+      remaining: ["#b", "#c"],
+      lastColor: "#a",
+    });
+  });
+  it("can still pick the only color when the list has one entry", () => {
+    expect(pickColor(["#a"], { remaining: [], lastColor: "#a" }, () => 0)).toEqual({
+      color: "#a",
+      remaining: [],
+      lastColor: "#a",
+    });
+  });
+  it("uses a later candidate when random points further into the list", () => {
+    // candidates [#a, #b, #c]; random just under 1 → last index
+    expect(pickColor(["#a", "#b", "#c"], { remaining: [], lastColor: null }, () => 0.99)).toEqual({
+      color: "#c",
+      remaining: ["#a", "#b"],
+      lastColor: "#c",
+    });
   });
 });
 

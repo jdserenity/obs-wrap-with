@@ -10,7 +10,7 @@ import {
   cursorRetreatForColor,
   cursorRetreatForTag,
   emCommandHotkeys,
-  nextColor,
+  pickColor,
   prepareSelection,
   removeColorSpans,
   wrapWithColor,
@@ -30,13 +30,15 @@ function applyWrap(editor: Editor, tag: string): void {
 export interface WrapWithSettings {
   emAlsoModShiftI: boolean;
   colors: string[];
-  nextColorIndex: number;
+  colorPool: string[];
+  lastColor: string | null;
 }
 
 export const DEFAULT_SETTINGS: WrapWithSettings = {
   emAlsoModShiftI: true,
   colors: [...DEFAULT_COLORS],
-  nextColorIndex: 0,
+  colorPool: [],
+  lastColor: null,
 };
 
 export default class WrapWithPlugin extends Plugin {
@@ -51,20 +53,26 @@ export default class WrapWithPlugin extends Plugin {
 
   async loadSettings(): Promise<void> {
     const data = await this.loadData();
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, data, {
+    this.settings = {
+      emAlsoModShiftI: data?.emAlsoModShiftI ?? DEFAULT_SETTINGS.emAlsoModShiftI,
       colors: data?.colors?.length ? [...data.colors] : [...DEFAULT_COLORS],
-    });
-    this.clampColorIndex();
+      colorPool: Array.isArray(data?.colorPool) ? [...data.colorPool] : [],
+      lastColor: typeof data?.lastColor === "string" ? data.lastColor : null,
+    };
+    this.sanitizeColorState();
   }
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
   }
 
-  clampColorIndex(): void {
-    const n = this.settings.colors.length;
-    if (n < 1) { this.settings.colors = [...DEFAULT_COLORS]; }
-    this.settings.nextColorIndex = ((this.settings.nextColorIndex % this.settings.colors.length) + this.settings.colors.length) % this.settings.colors.length;
+  sanitizeColorState(): void {
+    if (this.settings.colors.length < 1) { this.settings.colors = [...DEFAULT_COLORS]; }
+    const allowed = new Set(this.settings.colors);
+    this.settings.colorPool = this.settings.colorPool.filter((c) => allowed.has(c));
+    if (this.settings.lastColor != null && !allowed.has(this.settings.lastColor)) {
+      this.settings.lastColor = null;
+    }
   }
 
   registerWrapCommands(): void {
@@ -92,16 +100,20 @@ export default class WrapWithPlugin extends Plugin {
       icon: COLOR_COMMAND.icon,
       hotkeys: [COLOR_HOTKEY],
       editorCallback: async (editor) => {
-        this.clampColorIndex();
+        this.sanitizeColorState();
         const selection = editor.getSelection();
-        const { color, nextIndex } = nextColor(this.settings.colors, this.settings.nextColorIndex);
+        const { color, remaining, lastColor } = pickColor(this.settings.colors, {
+          remaining: this.settings.colorPool,
+          lastColor: this.settings.lastColor,
+        });
         const inner = prepareSelection(selection, "color");
         editor.replaceSelection(wrapWithColor(inner, color));
         if (!selection) {
           const cursor = editor.getCursor();
           editor.setCursor({ line: cursor.line, ch: cursor.ch - cursorRetreatForColor() });
         }
-        this.settings.nextColorIndex = nextIndex;
+        this.settings.colorPool = remaining;
+        this.settings.lastColor = lastColor;
         await this.saveSettings();
       },
     });
@@ -141,14 +153,14 @@ class WrapWithSettingTab extends PluginSettingTab {
           })
       );
 
-    new Setting(containerEl).setName("Color rotation").setHeading();
+    new Setting(containerEl).setName("Colors").setHeading();
     new Setting(containerEl)
       .setName("Colors")
-      .setDesc("Each color wrap uses the next color in this list, then wraps around. Min 1 color.")
+      .setDesc("Each wrap picks a random unused color from this list. When all have been used, the list resets; the first pick after a reset will not match the previous color. Min 1 color.")
       .addButton((btn) =>
         btn.setButtonText("Add color").onClick(async () => {
           this.plugin.settings.colors.push("#000000");
-          this.plugin.clampColorIndex();
+          this.plugin.sanitizeColorState();
           await this.plugin.saveSettings();
           this.display();
         })
@@ -160,6 +172,7 @@ class WrapWithSettingTab extends PluginSettingTab {
         .addColorPicker((picker) =>
           picker.setValue(color).onChange(async (value) => {
             this.plugin.settings.colors[i] = value;
+            this.plugin.sanitizeColorState();
             await this.plugin.saveSettings();
           })
         )
@@ -167,7 +180,7 @@ class WrapWithSettingTab extends PluginSettingTab {
           btn.setButtonText("Remove").setDisabled(this.plugin.settings.colors.length <= 1).onClick(async () => {
             if (this.plugin.settings.colors.length <= 1) return;
             this.plugin.settings.colors.splice(i, 1);
-            this.plugin.clampColorIndex();
+            this.plugin.sanitizeColorState();
             await this.plugin.saveSettings();
             this.display();
           })

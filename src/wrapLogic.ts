@@ -39,7 +39,7 @@ export const DEFAULT_COLORS = ["#c00000", "#ff6600", "#ffc000", "#00b050", "#00b
 
 export const COLOR_COMMAND = {
   id: "wrap-with-color",
-  name: "Wrap selection with next color",
+  name: "Wrap selection with color",
   icon: "palette",
 } as const;
 
@@ -96,10 +96,29 @@ export function cursorRetreatForColor(): number {
   return "</span>".length;
 }
 
-export function nextColor(colors: string[], index: number): { color: string; nextIndex: number } {
-  const n = colors.length;
-  const i = ((index % n) + n) % n;
-  return { color: colors[i], nextIndex: (i + 1) % n };
+export type ColorPickState = {
+  remaining: string[];
+  lastColor: string | null;
+};
+
+/** Random pick from remaining (refill when empty); after refill, first pick excludes lastColor when possible. */
+export function pickColor(
+  colors: string[],
+  state: ColorPickState,
+  random: () => number = Math.random,
+): { color: string; remaining: string[]; lastColor: string } {
+  const startingFresh = state.remaining.length === 0;
+  const pool = startingFresh ? [...colors] : [...state.remaining];
+  let candidates = pool;
+  if (startingFresh && state.lastColor != null && pool.length > 1) {
+    const filtered = pool.filter((c) => c !== state.lastColor);
+    if (filtered.length > 0) candidates = filtered;
+  }
+  const pickIndex = Math.min(Math.floor(random() * candidates.length), candidates.length - 1);
+  const color = candidates[pickIndex];
+  const removeAt = pool.indexOf(color);
+  const remaining = [...pool.slice(0, removeAt), ...pool.slice(removeAt + 1)];
+  return { color, remaining, lastColor: color };
 }
 
 /** Unwrap every color span in the text; repeats until stable for nested spans. */
