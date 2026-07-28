@@ -1,18 +1,18 @@
 # Architecture (agent reference)
 
 ## Purpose
-Obsidian plugin **Wrap With**: wrap editor selection in HTML `<b>` / `<em>` / `<s>` / `<u>`, or next color span; strip one outer matching layer then convert remaining known markdown wraps to HTML before applying outer wrap. Remove-color unwraps color spans in selection.
+Obsidian plugin **Wrap With**: wrap editor selection in HTML `<b>` / `<em>` / `<s>` / `<u>`, or a color span; strip one outer matching layer then convert remaining known markdown wraps to HTML before applying outer wrap. Remove-color unwraps color spans in selection.
 
 ## Layout
-- `src/wrapLogic.ts` — pure helpers: `WRAP_MODES`, `prepareSelection` (strip outer + `convertInnerMarkdown`), color helpers (`wrapWithColor`, `nextColor`, `removeColorSpans`, command/hotkey constants, `DEFAULT_COLORS`).
-- `src/main.ts` — Plugin: commands per wrap mode + `wrap-with-color` + `wrap-with-remove-color`; settings tab; persist `{ emAlsoModShiftI, colors, nextColorIndex }`.
+- `src/wrapLogic.ts` — pure helpers: `WRAP_MODES`, `prepareSelection` (strip outer + `convertInnerMarkdown`), color helpers (`wrapWithColor`, `pickColor`, `removeColorSpans`, command/hotkey constants, `DEFAULT_COLORS`).
+- `src/main.ts` — Plugin: commands per wrap mode + `wrap-with-color` + `wrap-with-remove-color`; settings tab; persist `{ emAlsoModShiftI, colors, colorPool, lastColor }`.
 - `esbuild.config.mjs` — bundle `src/main.ts` → `dist/main.js` (`obsidian` external).
 - `push_to_prod` — build then copy `dist/main.js` + `manifest.json` into desktop and iOS vault plugin folders.
 
 ## Apply path
 1. If whole selection matches mode outer (markdown and/or HTML for that tag; color = outer `<span style="color:…">`), strip once.
 2. Convert anywhere inside: `***`→`<b><em>`, `**`→`<b>`, `*`→`<em>`, `~~`→`<s>`.
-3. Wrap with target tag or next color span; color advances `nextColorIndex` (persisted). Remove-color: non-empty selection → `removeColorSpans` only (no index change).
+3. Wrap with target tag or color span; color uses `pickColor` (random from `colorPool`, refill from `colors` when empty; first pick after refill excludes `lastColor` when ≥2 colors) and persists `colorPool` + `lastColor`. Remove-color: non-empty selection → `removeColorSpans` only (no pool change).
 
 ## Commands / defaults
 | id | hotkey | icon |
