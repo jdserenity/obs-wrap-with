@@ -3,6 +3,7 @@ import {
   EM_ALT_HOTKEY,
   WRAP_HOTKEYS,
   WRAP_MODES,
+  commandColor,
   convertInnerMarkdown,
   cursorRetreatForColor,
   cursorRetreatForTag,
@@ -11,6 +12,7 @@ import {
   nextColor,
   prepareSelection,
   removeColorSpans,
+  toggleOneShotColor,
   wrapWithColor,
   wrapWithTag,
 } from "./wrapLogic";
@@ -129,6 +131,27 @@ describe("wrapWithColor / cursorRetreatForColor / nextColor", () => {
   it("returns current color and advances index with wraparound", () => {
     expect(nextColor(["#a", "#b"], 0)).toEqual({ color: "#a", nextIndex: 1 });
     expect(nextColor(["#a", "#b"], 1)).toEqual({ color: "#b", nextIndex: 0 });
+  });
+});
+
+describe("color locking", () => {
+  it("uses the locked color without advancing the next random index", () => {
+    expect(commandColor(["#a", "#b"], 1, "#a")).toEqual({ color: "#a", oneShot: false, nextIndex: false });
+  });
+  it("uses a one-shot color without advancing the next random index", () => {
+    expect(commandColor(["#a", "#b"], 1, null, "#a")).toEqual({ color: "#a", oneShot: true, nextIndex: false });
+  });
+  it("uses the locked color before a one-shot color", () => {
+    expect(commandColor(["#a", "#b"], 1, "#b", "#a")).toEqual({ color: "#b", oneShot: false, nextIndex: false });
+  });
+  it("falls back to next color when no saved color is locked", () => {
+    expect(commandColor(["#a", "#b"], 1, null)).toEqual({ color: "#b", nextIndex: 0, oneShot: false });
+  });
+  it("sets one-shot color when clicking a different swatch", () => {
+    expect(toggleOneShotColor("#a", "#b")).toBe("#b");
+  });
+  it("clears one-shot color when clicking the same swatch again", () => {
+    expect(toggleOneShotColor("#a", "#a")).toBeNull();
   });
 });
 

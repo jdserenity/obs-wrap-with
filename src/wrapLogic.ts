@@ -102,6 +102,22 @@ export function nextColor(colors: string[], index: number): { color: string; nex
   return { color: colors[i], nextIndex: (i + 1) % n };
 }
 
+export type CommandColor = {
+  color: string;
+  oneShot: boolean;
+  nextIndex: number | false;
+};
+
+export function commandColor(colors: string[], index: number, lockedColor: string | null | undefined, oneShotColor: string | null | undefined = null): CommandColor {
+  if (lockedColor) return { color: lockedColor, oneShot: false, nextIndex: false };
+  if (oneShotColor) return { color: oneShotColor, oneShot: true, nextIndex: false };
+  return { ...nextColor(colors, index), oneShot: false };
+}
+
+export function toggleOneShotColor(currentColor: string | null | undefined, clickedColor: string): string | null {
+  return currentColor === clickedColor ? null : clickedColor;
+}
+
 /** Unwrap every color span in the text; repeats until stable for nested spans. */
 export function removeColorSpans(text: string): string {
   let prev = "";
