@@ -5,7 +5,8 @@ Obsidian plugin **Wrap With**: wrap editor selection in HTML `<b>` / `<em>` / `<
 
 ## Layout
 - `src/wrapLogic.ts` — pure helpers: `WRAP_MODES`, `prepareSelection` (strip outer + `convertInnerMarkdown`), color helpers (`wrapWithColor`, `nextColor`, `commandColor`, `removeColorSpans`, command/hotkey constants, `DEFAULT_COLORS`).
-- `src/main.ts` — Plugin: commands per wrap mode + `wrap-with-color` + `wrap-with-remove-color`; status bar color picker/lock modal; settings tab; persist `{ emAlsoModShiftI, colors, nextColorIndex, lockedColor, oneShotColor }`.
+- `src/main.ts` — Plugin: commands per wrap mode + `wrap-with-color` + `wrap-with-remove-color`; status bar color picker/lock popup; settings tab; persist `{ emAlsoModShiftI, colors, nextColorIndex, lockedColor, oneShotColor }`.
+- `src/colorPopup.ts` — pure viewport-clamped placement above the status item and pointer-focus preservation helper.
 - `esbuild.config.mjs` — bundle `src/main.ts` → `dist/main.js` (`obsidian` external).
 - `push_to_prod` — build then copy `dist/main.js` + `manifest.json` into desktop and iOS vault plugin folders.
 
@@ -21,9 +22,9 @@ Obsidian plugin **Wrap With**: wrap editor selection in HTML `<b>` / `<em>` / `<
 | `wrap-with-color` | Mod+Shift+C | palette |
 | `wrap-with-remove-color` | Mod+Shift+X | eraser |
 
-Color markup: `<span style="color: #RRGGBB">…</span>`. Default palette (7): `#c00000`, `#ff6600`, `#ffc000`, `#00b050`, `#00b0f0`, `#0070c0`, `#7030a0`. Settings: add/remove colors (min 1). Status bar color button is icon-only; the icon is colored for one-shot/locked color and opens a popup with saved color swatches plus lock/unlock. Desktop vs iOS vaults have separate plugin data (no sync).
+Color markup: `<span style="color: #RRGGBB">…</span>`. Default palette (7): `#c00000`, `#ff6600`, `#ffc000`, `#00b050`, `#00b0f0`, `#0070c0`, `#7030a0`. Settings: add/remove colors (min 1). Status bar color button is icon-only; the icon is colored for one-shot/locked color and opens a non-modal popup directly above the status bar with saved color swatches plus lock/unlock. Pointer presses within the button/popup preserve editor focus and selection. Desktop vs iOS vaults have separate plugin data (no sync).
 
 ## Build / test
 - `npm run build` — `tsc --noEmit` then esbuild → `dist/main.js`
-- `npm test` — Vitest (`src/wrapLogic.test.ts`, `src/pushToProd.test.ts`)
+- `npm test` — Vitest (`src/wrapLogic.test.ts`, `src/colorPopup.test.ts`, `src/pushToProd.test.ts`)
 - `npm run push_to_prod` — deploy to `obsidian vault (root)` and iCloud `obsidian vault (ios)` under `.obsidian/plugins/wrap-with`

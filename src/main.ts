@@ -1,4 +1,5 @@
-import { App, ButtonComponent, Editor, Modal, Plugin, PluginSettingTab, Setting, setIcon } from "obsidian";
+import { App, ButtonComponent, Editor, Plugin, PluginSettingTab, Setting, setIcon } from "obsidian";
+import { colorPopupPosition, preserveEditorSelection } from "./colorPopup";
 import {
   COLOR_COMMAND,
   COLOR_HOTKEY,
@@ -48,6 +49,7 @@ export default class WrapWithPlugin extends Plugin {
   settings: WrapWithSettings = DEFAULT_SETTINGS;
   private commandsRegistered = false;
   private colorStatusEl: HTMLElement | null = null;
+  private colorPopup: ColorCommandPopup | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -112,13 +114,27 @@ export default class WrapWithPlugin extends Plugin {
     el.style.display = "inline-flex";
     el.style.alignItems = "center";
     el.style.gap = "4px";
-    this.registerDomEvent(el, "click", () => new ColorCommandModal(this.app, this).open());
+    this.registerDomEvent(el, "mousedown", preserveEditorSelection);
+    this.registerDomEvent(el, "click", () => this.toggleColorPopup());
     this.registerDomEvent(el, "keydown", (evt) => {
       if (evt.key !== "Enter" && evt.key !== " ") return;
       evt.preventDefault();
-      new ColorCommandModal(this.app, this).open();
+      this.toggleColorPopup();
     });
+    this.register(() => this.closeColorPopup());
     this.updateColorStatusBar();
+  }
+
+  private toggleColorPopup(): void {
+    if (this.colorPopup) { this.closeColorPopup(); return; }
+    if (!this.colorStatusEl) return;
+    this.colorPopup = new ColorCommandPopup(this, this.colorStatusEl, () => { this.colorPopup = null; });
+    this.colorPopup.open();
+  }
+
+  private closeColorPopup(): void {
+    this.colorPopup?.close();
+    this.colorPopup = null;
   }
 
   registerWrapCommands(): void {
@@ -180,17 +196,50 @@ export default class WrapWithPlugin extends Plugin {
   }
 }
 
-class ColorCommandModal extends Modal {
+class ColorCommandPopup {
   private selectedColor: string;
+  private popupEl: HTMLElement | null = null;
+  private readonly doc: Document;
+  private readonly win: Window;
 
-  constructor(app: App, private plugin: WrapWithPlugin) {
-    super(app);
+  constructor(private plugin: WrapWithPlugin, private anchorEl: HTMLElement, private onClose: () => void) {
     this.plugin.clampColorIndex();
     this.selectedColor = this.plugin.settings.lockedColor ?? this.plugin.settings.oneShotColor ?? this.plugin.settings.colors[this.plugin.settings.nextColorIndex] ?? this.plugin.settings.colors[0];
+    this.doc = anchorEl.ownerDocument;
+    this.win = this.doc.defaultView ?? window;
   }
 
-  onOpen(): void {
+  open(): void {
+    const popupEl = this.doc.body.createDiv({ cls: "wrap-with-color-popup" });
+    popupEl.setAttribute("role", "dialog");
+    popupEl.setAttribute("aria-label", "Wrap color");
+    popupEl.style.position = "fixed";
+    popupEl.style.zIndex = "1000";
+    popupEl.style.width = "260px";
+    popupEl.style.maxWidth = "calc(100vw - 16px)";
+    popupEl.style.padding = "12px";
+    popupEl.style.background = "var(--background-primary)";
+    popupEl.style.border = "1px solid var(--background-modifier-border)";
+    popupEl.style.borderRadius = "8px";
+    popupEl.style.boxShadow = "var(--shadow-s)";
+    popupEl.addEventListener("mousedown", preserveEditorSelection);
+    this.popupEl = popupEl;
     this.render();
+    this.doc.addEventListener("mousedown", this.handleDocumentMouseDown, true);
+    this.doc.addEventListener("keydown", this.handleDocumentKeyDown, true);
+    this.win.addEventListener("resize", this.position);
+    this.win.addEventListener("scroll", this.position, true);
+  }
+
+  close(): void {
+    if (!this.popupEl) return;
+    this.doc.removeEventListener("mousedown", this.handleDocumentMouseDown, true);
+    this.doc.removeEventListener("keydown", this.handleDocumentKeyDown, true);
+    this.win.removeEventListener("resize", this.position);
+    this.win.removeEventListener("scroll", this.position, true);
+    this.popupEl.remove();
+    this.popupEl = null;
+    this.onClose();
   }
 
   private async selectColor(color: string): Promise<void> {
@@ -202,11 +251,15 @@ class ColorCommandModal extends Modal {
   }
 
   private render(): void {
-    const { contentEl } = this;
+    const contentEl = this.popupEl;
+    if (!contentEl) return;
     const lockedColor = this.plugin.settings.lockedColor;
     const oneShotColor = this.plugin.settings.oneShotColor;
-    this.setTitle("Wrap color");
     contentEl.empty();
+
+    const titleEl = contentEl.createDiv({ text: "Wrap color" });
+    titleEl.style.fontWeight = "var(--font-semibold)";
+    titleEl.style.marginBottom = "8px";
 
     const currentEl = contentEl.createDiv();
     currentEl.style.display = "flex";
@@ -247,7 +300,30 @@ class ColorCommandModal extends Modal {
         await this.plugin.setLockedColor(lockedColor ? null : this.selectedColor);
         this.render();
       });
+    this.position();
   }
+
+  private position = (): void => {
+    if (!this.popupEl) return;
+    const anchor = this.anchorEl.getBoundingClientRect();
+    const popup = this.popupEl.getBoundingClientRect();
+    const position = colorPopupPosition(anchor, popup, { width: this.win.innerWidth, height: this.win.innerHeight });
+    this.popupEl.style.left = `${position.left}px`;
+    this.popupEl.style.top = `${position.top}px`;
+  };
+
+  private handleDocumentMouseDown = (event: MouseEvent): void => {
+    const target = event.target as Node | null;
+    if (!target) return;
+    if (this.popupEl?.contains(target) || this.anchorEl.contains(target)) return;
+    this.close();
+  };
+
+  private handleDocumentKeyDown = (event: KeyboardEvent): void => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    this.close();
+  };
 }
 
 class WrapWithSettingTab extends PluginSettingTab {
