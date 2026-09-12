@@ -4,6 +4,8 @@ import {
   COLOR_COMMAND,
   COLOR_HOTKEY,
   DEFAULT_COLORS,
+  OPEN_COLOR_PALETTE_COMMAND,
+  OPEN_COLOR_PALETTE_HOTKEY,
   REMOVE_COLOR_COMMAND,
   REMOVE_COLOR_HOTKEY,
   WRAP_MODES,
@@ -141,6 +143,7 @@ export default class WrapWithPlugin extends Plugin {
     if (this.commandsRegistered) {
       for (const mode of WRAP_MODES) this.removeCommand(mode.id);
       this.removeCommand(COLOR_COMMAND.id);
+      this.removeCommand(OPEN_COLOR_PALETTE_COMMAND.id);
       this.removeCommand(REMOVE_COLOR_COMMAND.id);
     }
     for (const mode of WRAP_MODES) {
@@ -156,6 +159,13 @@ export default class WrapWithPlugin extends Plugin {
         editorCallback: (editor) => applyWrap(editor, mode.tag),
       });
     }
+    this.addCommand({
+      id: OPEN_COLOR_PALETTE_COMMAND.id,
+      name: OPEN_COLOR_PALETTE_COMMAND.name,
+      icon: OPEN_COLOR_PALETTE_COMMAND.icon,
+      hotkeys: [OPEN_COLOR_PALETTE_HOTKEY],
+      editorCallback: () => this.toggleColorPopup(),
+    });
     this.addCommand({
       id: COLOR_COMMAND.id,
       name: COLOR_COMMAND.name,
