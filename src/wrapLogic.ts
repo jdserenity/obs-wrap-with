@@ -99,6 +99,11 @@ export function wrapWithColor(inner: string, hex: string): string {
   return `<span style="color: ${hex}">${inner}</span>`;
 }
 
+export function wrapColorSelection(selection: string, hex: string): string | null {
+  if (!selection) return null;
+  return wrapWithColor(prepareSelection(selection, "color"), hex);
+}
+
 export function cursorRetreatForColor(): number {
   return "</span>".length;
 }

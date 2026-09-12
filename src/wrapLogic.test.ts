@@ -15,6 +15,7 @@ import {
   prepareSelection,
   removeColorSpans,
   toggleOneShotColor,
+  wrapColorSelection,
   wrapWithColor,
   wrapWithTag,
 } from "./wrapLogic";
@@ -140,6 +141,16 @@ describe("wrapWithColor / cursorRetreatForColor / nextColor", () => {
   it("returns current color and advances index with wraparound", () => {
     expect(nextColor(["#a", "#b"], 0)).toEqual({ color: "#a", nextIndex: 1 });
     expect(nextColor(["#a", "#b"], 1)).toEqual({ color: "#b", nextIndex: 0 });
+  });
+});
+
+describe("wrapColorSelection", () => {
+  it("wraps a non-empty selection with the confirmed palette color", () => {
+    expect(wrapColorSelection("**hello**", "#a")).toBe('<span style="color: #a"><b>hello</b></span>');
+  });
+
+  it("does not create color markup when there is no selection", () => {
+    expect(wrapColorSelection("", "#a")).toBeNull();
   });
 });
 

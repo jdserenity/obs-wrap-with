@@ -17,6 +17,7 @@ import {
   prepareSelection,
   removeColorSpans,
   toggleOneShotColor,
+  wrapColorSelection,
   wrapWithColor,
   wrapWithTag,
 } from "./wrapLogic";
@@ -127,10 +128,10 @@ export default class WrapWithPlugin extends Plugin {
     this.updateColorStatusBar();
   }
 
-  private toggleColorPopup(): void {
+  private toggleColorPopup(editor: Editor | null = this.app.workspace.activeEditor?.editor ?? null): void {
     if (this.colorPopup) { this.closeColorPopup(); return; }
     if (!this.colorStatusEl) return;
-    this.colorPopup = new ColorCommandPopup(this, this.colorStatusEl, () => { this.colorPopup = null; });
+    this.colorPopup = new ColorCommandPopup(this, this.colorStatusEl, editor, () => { this.colorPopup = null; });
     this.colorPopup.open();
   }
 
@@ -164,7 +165,7 @@ export default class WrapWithPlugin extends Plugin {
       name: OPEN_COLOR_PALETTE_COMMAND.name,
       icon: OPEN_COLOR_PALETTE_COMMAND.icon,
       hotkeys: [OPEN_COLOR_PALETTE_HOTKEY],
-      editorCallback: () => this.toggleColorPopup(),
+      editorCallback: (editor) => this.toggleColorPopup(editor),
     });
     this.addCommand({
       id: COLOR_COMMAND.id,
@@ -212,7 +213,7 @@ class ColorCommandPopup {
   private readonly doc: Document;
   private readonly win: Window;
 
-  constructor(private plugin: WrapWithPlugin, private anchorEl: HTMLElement, private onClose: () => void) {
+  constructor(private plugin: WrapWithPlugin, private anchorEl: HTMLElement, private editor: Editor | null, private onClose: () => void) {
     this.plugin.clampColorIndex();
     this.selectedColor = this.plugin.settings.lockedColor ?? this.plugin.settings.oneShotColor ?? this.plugin.settings.colors[this.plugin.settings.nextColorIndex] ?? this.plugin.settings.colors[0];
     this.doc = anchorEl.ownerDocument;
@@ -258,6 +259,19 @@ class ColorCommandPopup {
     if (this.plugin.settings.lockedColor) await this.plugin.setLockedColor(color);
     else await this.plugin.setOneShotColor(oneShotColor);
     this.render();
+  }
+
+  private async confirmColor(): Promise<void> {
+    const replacement = this.editor ? wrapColorSelection(this.editor.getSelection(), this.selectedColor) : null;
+    if (!replacement || !this.editor) {
+      await this.selectColor(this.selectedColor);
+      this.close();
+      return;
+    }
+    this.editor.replaceSelection(replacement);
+    if (this.plugin.settings.lockedColor) await this.plugin.setLockedColor(this.selectedColor);
+    else if (this.plugin.settings.oneShotColor) await this.plugin.setOneShotColor(null);
+    this.close();
   }
 
   private render(): void {
@@ -347,7 +361,7 @@ class ColorCommandPopup {
     if (event.key !== "Enter") return;
     event.preventDefault();
     event.stopPropagation();
-    void this.selectColor(this.selectedColor).then(() => this.close());
+    void this.confirmColor();
   };
 }
 
