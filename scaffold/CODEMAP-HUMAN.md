@@ -13,7 +13,7 @@ flowchart LR
 
 - **`src/wrapLogic.ts`** — The pure text rules (no Obsidian UI). This is what the tests hit.
 - **`src/main.ts`** — Registers commands, hotkeys, the mobile toolbar icons, the status bar color picker/lock popup, and the settings screen for the color list.
-- **`src/colorPopup.ts`** — Keeps the status-bar color popup above its button and prevents pointer presses on it from taking the editor's selection.
+- **`src/colorPopup.ts`** — Keeps the status-bar color popup above its button, calculates arrow-key color cycling, and prevents pointer presses on it from taking the editor's selection.
 - **`dist/main.js`** — The built file Obsidian actually loads. `push_to_prod` copies that plus `manifest.json` into my desktop vault and my iPhone vault.
 
 ## Flow
@@ -22,4 +22,4 @@ Wrap commands strip one matching outer layer, convert known markdown inside the 
 
 ## Colors
 
-Color state is stored in plugin data: saved colors, `nextColorIndex`, `oneShotColor`, and `lockedColor`. `src/main.ts` owns the status-bar popup anchored directly above the color button and the settings UI; `src/wrapLogic.ts` owns the pure color-choice rules.
+Color state is stored in plugin data: saved colors, `nextColorIndex`, `oneShotColor`, and `lockedColor`. `src/main.ts` owns the status-bar popup anchored directly above the color button, its focus-preserving keyboard controls, and the settings UI; `src/wrapLogic.ts` owns the pure color-choice rules.

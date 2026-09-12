@@ -19,10 +19,11 @@ Obsidian plugin **Wrap With**: wrap editor selection in HTML `<b>` / `<em>` / `<
 | id | hotkey | icon |
 |---|---|---|
 | `wrap-with-b` / `em` / `s` / `u` | Mod+Shift+B / E / S / U; em also Mod+Shift+I when `emAlsoModShiftI` | bold / italic / strikethrough / underline |
+| `wrap-with-open-color-palette` | Mod+Shift+O | palette |
 | `wrap-with-color` | Mod+Shift+C | palette |
 | `wrap-with-remove-color` | Mod+Shift+X | eraser |
 
-Color markup: `<span style="color: #RRGGBB">…</span>`. Default palette (7): `#c00000`, `#ff6600`, `#ffc000`, `#00b050`, `#00b0f0`, `#0070c0`, `#7030a0`. Settings: add/remove colors (min 1). Status bar color button is icon-only; the icon is colored for one-shot/locked color and opens a non-modal popup directly above the status bar with saved color swatches plus lock/unlock. Pointer presses within the button/popup preserve editor focus and selection. Desktop vs iOS vaults have separate plugin data (no sync).
+Color markup: `<span style="color: #RRGGBB">…</span>`. Default palette (7): `#c00000`, `#ff6600`, `#ffc000`, `#00b050`, `#00b0f0`, `#0070c0`, `#7030a0`. Settings: add/remove colors (min 1). Status bar color button is icon-only; the icon is colored for one-shot/locked color and opens a non-modal popup directly above the status bar with saved color swatches plus lock/unlock. Pointer presses within the button/popup preserve editor focus and selection. The open-palette command also leaves focus in the editor; while open, Left/Up and Right/Down cycle its internal swatch highlight without moving the editor selection, Enter confirms the highlighted color and closes, and Escape closes without changing the color. Desktop vs iOS vaults have separate plugin data (no sync).
 
 ## Build / test
 - `npm run build` — `tsc --noEmit` then esbuild → `dist/main.js`
