@@ -43,6 +43,12 @@ export const COLOR_COMMAND = {
   icon: "palette",
 } as const;
 
+export const OPEN_COLOR_PALETTE_COMMAND = {
+  id: "wrap-with-open-color-palette",
+  name: "Open color palette",
+  icon: "palette",
+} as const;
+
 export const REMOVE_COLOR_COMMAND = {
   id: "wrap-with-remove-color",
   name: "Remove color from selection",
@@ -50,6 +56,7 @@ export const REMOVE_COLOR_COMMAND = {
 } as const;
 
 export const COLOR_HOTKEY: WrapHotkey = { modifiers: ["Mod", "Shift"], key: "c" };
+export const OPEN_COLOR_PALETTE_HOTKEY: WrapHotkey = { modifiers: ["Mod", "Shift"], key: "o" };
 export const REMOVE_COLOR_HOTKEY: WrapHotkey = { modifiers: ["Mod", "Shift"], key: "x" };
 
 const COLOR_SPAN_OUTER = /^<span style="color:\s*[^"]+">(.*)<\/span>$/s;

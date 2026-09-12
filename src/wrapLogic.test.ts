@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   EM_ALT_HOTKEY,
+  OPEN_COLOR_PALETTE_COMMAND,
+  OPEN_COLOR_PALETTE_HOTKEY,
   WRAP_HOTKEYS,
   WRAP_MODES,
   commandColor,
@@ -69,6 +71,13 @@ describe("emCommandHotkeys", () => {
   });
   it("omits Mod+Shift+I when alsoModShiftI is false", () => {
     expect(emCommandHotkeys(false)).toEqual([WRAP_HOTKEYS.em]);
+  });
+});
+
+describe("color palette command", () => {
+  it("has a dedicated Mod+Shift+O hotkey", () => {
+    expect(OPEN_COLOR_PALETTE_COMMAND.id).toBe("wrap-with-open-color-palette");
+    expect(OPEN_COLOR_PALETTE_HOTKEY).toEqual({ modifiers: ["Mod", "Shift"], key: "o" });
   });
 });
 
