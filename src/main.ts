@@ -1,5 +1,5 @@
 import { App, ButtonComponent, Editor, Plugin, PluginSettingTab, Setting, setIcon } from "obsidian";
-import { colorPopupPosition, preserveEditorSelection } from "./colorPopup";
+import { colorAfterArrowKey, colorPopupPosition, preserveEditorSelection } from "./colorPopup";
 import {
   COLOR_COMMAND,
   COLOR_HOTKEY,
@@ -330,9 +330,24 @@ class ColorCommandPopup {
   };
 
   private handleDocumentKeyDown = (event: KeyboardEvent): void => {
-    if (event.key !== "Escape") return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      this.close();
+      return;
+    }
+    const color = colorAfterArrowKey(this.plugin.settings.colors, this.selectedColor, event.key);
+    if (color) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.selectedColor = color;
+      this.render();
+      return;
+    }
+    if (event.key !== "Enter") return;
     event.preventDefault();
-    this.close();
+    event.stopPropagation();
+    void this.selectColor(this.selectedColor).then(() => this.close());
   };
 }
 
