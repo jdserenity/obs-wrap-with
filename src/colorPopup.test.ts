@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { colorPopupPosition, preserveEditorSelection } from "./colorPopup";
+import { colorAfterArrowKey, colorPopupPosition, preserveEditorSelection } from "./colorPopup";
 
 describe("colorPopupPosition", () => {
   it("places the popup directly above the status bar item", () => {
@@ -24,5 +24,23 @@ describe("preserveEditorSelection", () => {
     const preventDefault = vi.fn();
     preserveEditorSelection({ preventDefault });
     expect(preventDefault).toHaveBeenCalledOnce();
+  });
+});
+
+describe("colorAfterArrowKey", () => {
+  const colors = ["#a", "#b", "#c"];
+
+  it("moves forward with Right or Down and wraps", () => {
+    expect(colorAfterArrowKey(colors, "#a", "ArrowRight")).toBe("#b");
+    expect(colorAfterArrowKey(colors, "#c", "ArrowDown")).toBe("#a");
+  });
+
+  it("moves backward with Left or Up and wraps", () => {
+    expect(colorAfterArrowKey(colors, "#b", "ArrowLeft")).toBe("#a");
+    expect(colorAfterArrowKey(colors, "#a", "ArrowUp")).toBe("#c");
+  });
+
+  it("ignores unrelated keys", () => {
+    expect(colorAfterArrowKey(colors, "#a", "Enter")).toBeNull();
   });
 });
